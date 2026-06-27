@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoScout — AI Car Sourcing UK</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+  :root {
+    --bg: #0e0e0f;
+    --surface: #161618;
+    --surface2: #1e1e21;
+    --border: #2a2a2e;
+    --accent: #e8ff47;
+    --accent-dim: rgba(232,255,71,0.1);
+    --red: #ff4f4f;
+    --green: #47ffb2;
+    --muted: #6b6b72;
+    --text: #f0f0f2;
+    --text2: #a0a0a8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; min-height: 100vh; }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo { font-family: 'Space Mono', monospace; font-size: 15px; font-weight: 700; letter-spacing: 0.08em; color: var(--accent); }
+  .logo span { color: var(--text2); }
+  .badge { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); border: 1px solid var(--border); padding: 4px 10px; border-radius: 20px; }
+
+  .container { max-width: 920px; margin: 0 auto; padding: 48px 24px; }
+
+  .hero { margin-bottom: 40px; }
+  .hero h1 { font-size: clamp(26px, 5vw, 40px); font-weight: 600; line-height: 1.15; letter-spacing: -0.02em; margin-bottom: 10px; }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .hero p { color: var(--text2); font-size: 15px; line-height: 1.6; max-width: 500px; }
+
+  /* SEARCH */
+  .search-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin-bottom: 32px; }
+  .panel-label { font-size: 11px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 18px; font-family: 'Space Mono', monospace; }
+
+  .query-row { display: flex; gap: 10px; margin-bottom: 18px; }
+  .query-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 13px 16px; color: var(--text); font-family: 'Space Grotesk', sans-serif; font-size: 15px; outline: none; transition: border-color 0.2s; }
+  .query-input:focus { border-color: var(--accent); }
+  .query-input::placeholder { color: var(--muted); }
+
+  .scout-btn { background: var(--accent); color: #0e0e0f; border: none; border-radius: 10px; padding: 13px 22px; font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: opacity 0.2s; }
+  .scout-btn:hover { opacity: 0.85; }
+  .scout-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .filters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+  .fg label { display: block; font-size: 10px; color: var(--muted); font-family: 'Space Mono', monospace; letter-spacing: 0.07em; margin-bottom: 5px; text-transform: uppercase; }
+  .fg input, .fg select { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; color: var(--text); font-family: 'Space Grotesk', sans-serif; font-size: 14px; outline: none; transition: border-color 0.15s; }
+  .fg input:focus, .fg select:focus { border-color: var(--accent); }
+  .fg select option { background: var(--surface2); }
+
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 5px 12px; font-size: 11px; color: var(--text2); font-family: 'Space Mono', monospace; cursor: pointer; user-select: none; transition: all 0.15s; }
+  .chip.on { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+  /* LOADING */
+  .loading { display: none; text-align: center; padding: 48px 24px; }
+  .loading.show { display: block; }
+  .spinner { display: inline-block; width: 44px; height: 44px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.75s linear infinite; margin-bottom: 18px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-msg { font-family: 'Space Mono', monospace; font-size: 13px; color: var(--text2); margin-bottom: 6px; }
+  .loading-sub { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); }
+
+  /* RESULTS */
+  .results-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .results-hdr h2 { font-size: 15px; font-weight: 600; }
+  .results-hdr .meta { font-size: 11px; color: var(--muted); font-family: 'Space Mono', monospace; }
+
+  /* CARD */
+  .car-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px; margin-bottom: 14px; position: relative; transition: border-color 0.2s; }
+  .car-card:hover { border-color: #333337; }
+  .car-card.best { border-color: rgba(232,255,71,0.25); background: linear-gradient(135deg, var(--surface) 0%, rgba(232,255,71,0.025) 100%); }
+
+  .best-tag { position: absolute; top: -1px; right: 18px; background: var(--accent); color: #0e0e0f; font-size: 9px; font-weight: 700; font-family: 'Space Mono', monospace; padding: 3px 10px; border-radius: 0 0 8px 8px; letter-spacing: 0.1em; }
+
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; gap: 10px; }
+  .car-title { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 3px; }
+  .car-sub { font-size: 12px; color: var(--text2); font-family: 'Space Mono', monospace; }
+
+  .price-blk { text-align: right; flex-shrink: 0; }
+  .price { font-size: 20px; font-weight: 700; color: var(--accent); font-family: 'Space Mono', monospace; }
+  .price-tag { font-size: 10px; margin-top: 2px; font-family: 'Space Mono', monospace; }
+  .price-tag.good { color: var(--green); }
+  .price-tag.warn { color: #ffb347; }
+  .price-tag.bad { color: var(--red); }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; padding: 12px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+  .stat { text-align: center; padding: 0 8px; }
+  .stat:not(:last-child) { border-right: 1px solid var(--border); }
+  .stat-v { font-size: 13px; font-weight: 600; font-family: 'Space Mono', monospace; margin-bottom: 2px; }
+  .stat-l { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+
+  /* AI ANALYSIS */
+  .ai-box { background: var(--surface2); border-radius: 10px; padding: 14px; margin-bottom: 14px; }
+  .ai-lbl { font-size: 9px; font-family: 'Space Mono', monospace; color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px; }
+  .ai-txt { font-size: 13px; color: var(--text2); line-height: 1.65; }
+  .ai-loading { color: var(--muted); font-style: italic; }
+
+  /* FLAGS */
+  .flags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 14px; }
+  .flag { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-family: 'Space Mono', monospace; }
+  .flag.g { background: rgba(71,255,178,0.08); color: var(--green); border: 1px solid rgba(71,255,178,0.18); }
+  .flag.r { background: rgba(255,79,79,0.08); color: var(--red); border: 1px solid rgba(255,79,79,0.18); }
+  .flag.y { background: rgba(232,255,71,0.08); color: var(--accent); border: 1px solid rgba(232,255,71,0.18); }
+
+  /* SCORES */
+  .score-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .score-lbl { font-size: 10px; color: var(--muted); font-family: 'Space Mono', monospace; width: 64px; flex-shrink: 0; text-transform: uppercase; }
+  .score-bar { flex: 1; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .score-fill { height: 100%; border-radius: 2px; background: var(--accent); transition: width 0.9s ease; }
+  .score-num { font-size: 10px; font-family: 'Space Mono', monospace; color: var(--text2); width: 26px; text-align: right; }
+
+  .actions { display: flex; gap: 8px; margin-top: 14px; }
+  .btn-primary { flex: 1; background: var(--accent); color: #0e0e0f; border: none; border-radius: 8px; padding: 10px; font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: opacity 0.2s; text-decoration: none; display: flex; align-items: center; justify-content: center; }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-sec { background: transparent; color: var(--text2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-family: 'Space Grotesk', sans-serif; font-size: 13px; cursor: pointer; transition: all 0.15s; }
+  .btn-sec:hover { border-color: var(--text2); color: var(--text); }
+
+  /* EMPTY */
+  .empty { text-align: center; padding: 64px 20px; color: var(--muted); }
+  .empty-icon { font-size: 36px; display: block; margin-bottom: 14px; }
+  .empty p { font-family: 'Space Mono', monospace; font-size: 13px; line-height: 1.7; }
+
+  /* ERROR */
+  .error-box { background: rgba(255,79,79,0.08); border: 1px solid rgba(255,79,79,0.2); border-radius: 12px; padding: 18px 22px; color: var(--red); font-family: 'Space Mono', monospace; font-size: 13px; line-height: 1.6; }
+
+  @media (max-width: 580px) {
+    header { padding: 14px 16px; }
+    .container { padding: 24px 14px; }
+    .filters { grid-template-columns: 1fr 1fr; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .stat:nth-child(2) { border-right: none; }
+    .stat:nth-child(3) { border-top: 1px solid var(--border); }
+    .query-row { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">AUTO<span>SCOUT</span></div>
+  <div class="badge">UK · AI-POWERED</div>
+</header>
+
+<div class="container">
+  <div class="hero">
+    <h1>Find your next car.<br><em>Without the noise.</em></h1>
+    <p>Describe what you want. AutoScout scans AutoTrader and eBay Motors, then ranks and analyses the best matches — with real AI insight on each listing.</p>
+  </div>
+
+  <div class="search-panel">
+    <div class="panel-label">// Your search</div>
+    <div class="query-row">
+      <input class="query-input" id="qInput" type="text"
+        placeholder="e.g. BMW Z4 2008-2012, under £8000, manual, below 80k miles..." />
+      <button class="scout-btn" id="scoutBtn" onclick="runSearch()">Scout →</button>
+    </div>
+    <div class="filters">
+      <div class="fg">
+        <label>Max Price</label>
+        <input type="number" id="fPrice" placeholder="8000" />
+      </div>
+      <div class="fg">
+        <label>Max Mileage</label>
+        <input type="number" id="fMiles" placeholder="80000" />
+      </div>
+      <div class="fg">
+        <label>Year From</label>
+        <input type="number" id="fYear" placeholder="2005" />
+      </div>
+    </div>
+    <div class="chips">
+      <div class="chip on" onclick="this.classList.toggle('on')">AutoTrader</div>
+      <div class="chip on" onclick="this.classList.toggle('on')">eBay Motors</div>
+      <div class="chip" onclick="this.classList.toggle('on')">Gumtree <span style="color:var(--muted)">(soon)</span></div>
+    </div>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <div class="loading-msg" id="loadMsg">Scanning listings...</div>
+    <div class="loading-sub" id="loadSub"></div>
+  </div>
+
+  <div id="results">
+    <div class="empty" id="emptyState">
+      <span class="empty-icon">🔍</span>
+      <p>Describe your ideal car above.<br>AutoScout will find and rank real UK listings.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Parse natural language query ───────────────────────────────────────────
+async function parseQuery(raw) {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: 300,
+      system: `Extract car search parameters from user input. Return ONLY JSON, no other text:
+{"make":"BMW","model":"Z4","price_to":8000,"mileage_to":80000,"year_from":2008,"year_to":2012}
+If a field isn't mentioned use these defaults: price_to:15000, mileage_to:100000, year_from:2000, year_to:2024`,
+      messages: [{ role: "user", content: raw }]
+    })
+  });
+  const d = await res.json();
+  const txt = d.content.map(i => i.text || "").join("").replace(/```json|```/g, "").trim();
+  return JSON.parse(txt);
+}
+
+// ─── AI analysis per listing ─────────────────────────────────────────────────
+async function analyseListings(listings, query) {
+  const listStr = listings.map((l, i) =>
+    `${i+1}. ${l.title} — £${l.price.toLocaleString()}, ${l.mileage}, ${l.location} (${l.source})`
+  ).join("\n");
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: 1000,
+      system: `You are an expert UK car buyer's advisor. Analyse these listings for someone searching: "${query}".
+Return ONLY a JSON array (one object per listing, same order):
+[{
+  "verdict": "one sentence expert verdict on this specific listing",
+  "fairPrice": "excellent|fair|overpriced",
+  "flags": [{"type":"g","text":"Full service history"},{"type":"y","text":"Check timing chain"},{"type":"r","text":"High mileage"}],
+  "scores": {"value":80,"reliability":72,"condition":85},
+  "topPick": false
+}]
+Make exactly one topPick:true. Be specific to the make/model. No markdown, pure JSON only.`,
+      messages: [{ role: "user", content: listStr }]
+    })
+  });
+  const d = await res.json();
+  const txt = d.content.map(i => i.text || "").join("").replace(/```json|```/g, "").trim();
+  return JSON.parse(txt);
+}
+
+// ─── Main search ─────────────────────────────────────────────────────────────
+let loadTimer;
+const loadMsgs = [
+  ["Parsing your search...", "Understanding what you're looking for"],
+  ["Scanning AutoTrader...", "Checking real listings"],
+  ["Scanning eBay Motors...", "Looking for private sellers"],
+  ["Crunching the numbers...", "Comparing prices and mileage"],
+  ["Running AI analysis...", "Evaluating each listing"],
+  ["Almost there...", "Ranking your top picks"],
+];
+
+async function runSearch() {
+  const raw = document.getElementById('qInput').value.trim();
+  if (!raw) { document.getElementById('qInput').focus(); return; }
+
+  const btn = document.getElementById('scoutBtn');
+  btn.disabled = true; btn.textContent = 'Scouting...';
+
+  document.getElementById('emptyState') && (document.getElementById('emptyState').remove());
+  document.getElementById('results').innerHTML = '';
+  document.getElementById('loading').classList.add('show');
+
+  let step = 0;
+  function nextMsg() {
+    if (step < loadMsgs.length) {
+      document.getElementById('loadMsg').textContent = loadMsgs[step][0];
+      document.getElementById('loadSub').textContent = loadMsgs[step][1];
+      step++;
+    }
+  }
+  nextMsg();
+  loadTimer = setInterval(nextMsg, 1800);
+
+  try {
+    // 1. Parse query with AI
+    const params = await parseQuery(raw);
+
+    // Apply manual filter overrides
+    if (document.getElementById('fPrice').value) params.price_to = parseInt(document.getElementById('fPrice').value);
+    if (document.getElementById('fMiles').value) params.mileage_to = parseInt(document.getElementById('fMiles').value);
+    if (document.getElementById('fYear').value) params.year_from = parseInt(document.getElementById('fYear').value);
+
+    // 2. Fetch real listings from our API
+    const apiUrl = `/api/search?make=${encodeURIComponent(params.make)}&model=${encodeURIComponent(params.model)}&price_to=${params.price_to}&mileage_to=${params.mileage_to}&year_from=${params.year_from}&year_to=${params.year_to}`;
+    const apiRes = await fetch(apiUrl);
+    const apiData = await apiRes.json();
+    const listings = apiData.listings || [];
+
+    if (listings.length === 0) {
+      throw new Error("No listings found. Try adjusting your search.");
+    }
+
+    // 3. AI analysis on real listings
+    const analyses = await analyseListings(listings, raw);
+
+    // Merge
+    const merged = listings.map((l, i) => ({ ...l, ...(analyses[i] || {}) }));
+    merged.sort((a, b) => (b.topPick ? 1 : 0) - (a.topPick ? 1 : 0));
+
+    clearInterval(loadTimer);
+    document.getElementById('loading').classList.remove('show');
+    renderResults(merged, apiData.sources);
+
+  } catch (err) {
+    clearInterval(loadTimer);
+    document.getElementById('loading').classList.remove('show');
+    document.getElementById('results').innerHTML = `
+      <div class="error-box">
+        ⚠ ${err.message || "Something went wrong. Please try again."}
+        <br><br>
+        <span style="color:var(--muted)">If this is a first run, make sure the /api/search endpoint is deployed on Vercel.</span>
+      </div>`;
+  }
+
+  btn.disabled = false; btn.textContent = 'Scout →';
+}
+
+function renderResults(cars, sources) {
+  let html = `
+    <div class="results-hdr">
+      <h2>${cars.length} listings found</h2>
+      <span class="meta">AutoTrader: ${sources?.autotrader_count || 0} · eBay: ${sources?.ebay_count || 0}</span>
+    </div>`;
+
+  for (const car of cars) {
+    const pClass = car.fairPrice === 'excellent' ? 'good' : car.fairPrice === 'overpriced' ? 'bad' : 'warn';
+    const pLabel = car.fairPrice === 'excellent' ? '✓ Below market' : car.fairPrice === 'overpriced' ? '↑ Overpriced' : '≈ Fair value';
+    const flags = (car.flags || []).map(f => `<span class="flag ${f.type}">${f.text}</span>`).join('');
+    const scores = car.scores || {};
+    const scoreHtml = Object.entries(scores).map(([k, v]) => `
+      <div class="score-row">
+        <span class="score-lbl">${k}</span>
+        <div class="score-bar"><div class="score-fill" style="width:${v}%"></div></div>
+        <span class="score-num">${v}</span>
+      </div>`).join('');
+
+    const yr = car.year ? `${car.year} · ` : '';
+    const miles = car.mileage ? car.mileage.replace(/\s*miles/i, ' mi') : '—';
+
+    html += `
+      <div class="car-card ${car.topPick ? 'best' : ''}">
+        ${car.topPick ? '<div class="best-tag">TOP PICK</div>' : ''}
+        <div class="card-top">
+          <div>
+            <div class="car-title">${car.title}</div>
+            <div class="car-sub">${yr}${car.source} · ${car.location}</div>
+          </div>
+          <div class="price-blk">
+            <div class="price">£${car.price.toLocaleString()}</div>
+            <div class="price-tag ${pClass}">${pLabel}</div>
+          </div>
+        </div>
+        <div class="stats">
+          <div class="stat"><div class="stat-v">${miles}</div><div class="stat-l">Mileage</div></div>
+          <div class="stat"><div class="stat-v">${car.year || '—'}</div><div class="stat-l">Year</div></div>
+          <div class="stat"><div class="stat-v">${car.source}</div><div class="stat-l">Source</div></div>
+          <div class="stat"><div class="stat-v">${car.location?.split(',')[0] || '—'}</div><div class="stat-l">Location</div></div>
+        </div>
+        <div class="ai-box">
+          <div class="ai-lbl">// AI Verdict</div>
+          <div class="ai-txt">${car.verdict || '<span class="ai-loading">Analysing...</span>'}</div>
+        </div>
+        ${scoreHtml}
+        <div class="flags">${flags}</div>
+        <div class="actions">
+          <a class="btn-primary" href="${car.url || '#'}" target="_blank" rel="noopener">
+            View on ${car.source} ↗
+          </a>
+          <button class="btn-sec" onclick="this.textContent = this.textContent === 'Save' ? '★ Saved' : 'Save'">Save</button>
+        </div>
+      </div>`;
+  }
+
+  document.getElementById('results').innerHTML = html;
+
+  // Animate score bars
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.score-fill').forEach(el => {
+      const w = el.style.width; el.style.width = '0';
+      setTimeout(() => { el.style.width = w; }, 80);
+    });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('qInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') runSearch();
+  });
+});
+</script>
+</body>
+</html>
